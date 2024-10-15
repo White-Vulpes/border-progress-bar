@@ -1,15 +1,11 @@
-import React from "react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-export function BorderProgressBar({
-  strokeWidth,
-  strokeColor,
-  progress,
-}: {
+const BorderProgressBar = (props: {
   strokeWidth: number;
   strokeColor: string;
   progress: number;
-}) {
+}) => {
+  const { strokeWidth, strokeColor, progress } = props;
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({
     width: 0,
@@ -116,4 +112,6 @@ export function BorderProgressBar({
       />
     </svg>
   );
-}
+};
+
+export default BorderProgressBar;
