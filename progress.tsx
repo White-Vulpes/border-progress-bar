@@ -1,7 +1,7 @@
 import React from "react";
 import { useEffect, useRef, useState } from "react";
 
-export function Progress({
+export function BorderProgressBar({
   strokeWidth,
   strokeColor,
   progress,
