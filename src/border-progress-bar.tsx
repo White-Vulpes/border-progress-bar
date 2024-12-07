@@ -3,18 +3,15 @@ import React, { useEffect, useRef, useState } from "react";
 const BorderProgressBar = (props: {
   strokeWidth: number;
   strokeColor: string;
-  progress: number;
   loading?: boolean; // Add loading prop
 }) => {
-  const { strokeWidth, strokeColor, progress, loading = false } = props;
+  const { strokeWidth, strokeColor, loading = false } = props;
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({
     width: 0,
     height: 0,
     borderRadius: 0,
   });
-  const [currentProgress, setCurrentProgress] = useState(progress);
-  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -35,37 +32,6 @@ const BorderProgressBar = (props: {
     };
     updateDimensions();
   }, [strokeWidth]);
-
-  useEffect(() => {
-    if (!loading) {
-      const timeoutId = setTimeout(() => setCurrentProgress(progress), 0);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [progress, loading]);
-
-  useEffect(() => {
-    let animationFrameId: number;
-
-    if (loading) {
-      const startTime = performance.now();
-
-      const animate = (timestamp: number) => {
-        const elapsed = timestamp - startTime;
-        const speed = 0.002; // Base speed
-        const oscillation = Math.sin(elapsed * speed) * 0.5 + 0.5; // Oscillate between 0 and 1
-        const easeInOut =
-          oscillation < 0.5
-            ? 4 * oscillation ** 3
-            : 1 - Math.pow(-2 * oscillation + 2, 3) / 2; // Ease-in-out effect
-
-        setLoadingProgress(easeInOut);
-        animationFrameId = requestAnimationFrame(animate);
-      };
-
-      animationFrameId = requestAnimationFrame(animate);
-    }
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [loading]);
 
   function createSvgStrokeForBox(
     width: number,
@@ -106,41 +72,59 @@ const BorderProgressBar = (props: {
     dimensions.borderRadius
   );
 
-  const currentStrokeOffset =
-    strokeLength * (1 - (loading ? loadingProgress : currentProgress));
+  // CSS Keyframes for continuous motion animation
+  const animationStyle = `
+    @keyframes continuous-motion {
+      0% {
+        stroke-dasharray: ${strokeLength * 0.1} ${strokeLength * 0.9};
+        stroke-dashoffset: 0;
+      }
+      50% {
+        stroke-dasharray: ${strokeLength * 0.5} ${strokeLength * 0.5};
+        stroke-dashoffset: -${strokeLength * 0.25};
+      }
+      100% {
+        stroke-dasharray: ${strokeLength * 0.1} ${strokeLength * 0.9};
+        stroke-dashoffset: -${strokeLength};
+      }
+    }
+  `;
 
   return (
-    <svg
-      ref={svgRef}
-      width={dimensions.width + strokeWidth}
-      height={dimensions.height + strokeWidth}
-      viewBox={`-${strokeWidth / 2} -${strokeWidth / 2} ${
-        dimensions.width + strokeWidth
-      } ${dimensions.height + strokeWidth}`}
-      style={{
-        position: "absolute",
-        zIndex: 1,
-        left: "50%",
-        top: "50%",
-        transform: "translate(-50%, -50%)",
-      }}
-    >
-      <path
-        strokeWidth={strokeWidth}
-        stroke={strokeColor}
-        fill="none"
-        strokeDasharray={strokeLength}
-        strokeDashoffset={currentStrokeOffset}
+    <>
+      <style>{animationStyle}</style>
+      <svg
+        ref={svgRef}
+        width={dimensions.width + strokeWidth}
+        height={dimensions.height + strokeWidth}
+        viewBox={`-${strokeWidth / 2} -${strokeWidth / 2} ${
+          dimensions.width + strokeWidth
+        } ${dimensions.height + strokeWidth}`}
         style={{
-          transition: loading ? undefined : "stroke-dashoffset 0.5s ease",
+          position: "absolute",
+          zIndex: 1,
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
         }}
-        d={createSvgStrokeForBox(
-          dimensions.width,
-          dimensions.height,
-          dimensions.borderRadius
-        )}
-      />
-    </svg>
+      >
+        <path
+          strokeWidth={strokeWidth}
+          stroke={strokeColor}
+          fill="none"
+          style={{
+            animation: loading
+              ? "continuous-motion 1.5s linear infinite"
+              : undefined,
+          }}
+          d={createSvgStrokeForBox(
+            dimensions.width,
+            dimensions.height,
+            dimensions.borderRadius
+          )}
+        />
+      </svg>
+    </>
   );
 };
 

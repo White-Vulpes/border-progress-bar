@@ -1,6 +1,6 @@
 {
   "name": "@whitevulpes/border-progress-bar",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "This package creates a border that can be used to show progress around any div element.",
   "main": "dist/border-progress-bar.js",
   "types": "dist/border-progress-bar.d.ts",

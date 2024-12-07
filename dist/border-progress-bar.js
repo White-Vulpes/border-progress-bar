@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 const BorderProgressBar = (props) => {
-    const { strokeWidth, strokeColor, progress, loading = false } = props;
+    const { strokeWidth, strokeColor, loading = false } = props;
     const svgRef = useRef(null);
     const [dimensions, setDimensions] = useState({
         width: 0,
         height: 0,
         borderRadius: 0,
     });
-    const [currentProgress, setCurrentProgress] = useState(progress);
-    const [loadingProgress, setLoadingProgress] = useState(0);
     useEffect(() => {
         const updateDimensions = () => {
             if (svgRef.current && svgRef.current.parentElement) {
@@ -25,30 +23,6 @@ const BorderProgressBar = (props) => {
         };
         updateDimensions();
     }, [strokeWidth]);
-    useEffect(() => {
-        if (!loading) {
-            const timeoutId = setTimeout(() => setCurrentProgress(progress), 0);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [progress, loading]);
-    useEffect(() => {
-        let animationFrameId;
-        if (loading) {
-            const startTime = performance.now();
-            const animate = (timestamp) => {
-                const elapsed = timestamp - startTime;
-                const speed = 0.002; // Base speed
-                const oscillation = Math.sin(elapsed * speed) * 0.5 + 0.5; // Oscillate between 0 and 1
-                const easeInOut = oscillation < 0.5
-                    ? 4 * Math.pow(oscillation, 3)
-                    : 1 - Math.pow(-2 * oscillation + 2, 3) / 2; // Ease-in-out effect
-                setLoadingProgress(easeInOut);
-                animationFrameId = requestAnimationFrame(animate);
-            };
-            animationFrameId = requestAnimationFrame(animate);
-        }
-        return () => cancelAnimationFrame(animationFrameId);
-    }, [loading]);
     function createSvgStrokeForBox(width, height, borderRadius) {
         const r = Math.min(borderRadius, width / 2, height / 2);
         const midX = width / 2;
@@ -72,16 +46,36 @@ const BorderProgressBar = (props) => {
         return straightLength + cornerLength;
     }
     const strokeLength = calculateStrokeLength(dimensions.width, dimensions.height, dimensions.borderRadius);
-    const currentStrokeOffset = strokeLength * (1 - (loading ? loadingProgress : currentProgress));
-    return (React.createElement("svg", { ref: svgRef, width: dimensions.width + strokeWidth, height: dimensions.height + strokeWidth, viewBox: `-${strokeWidth / 2} -${strokeWidth / 2} ${dimensions.width + strokeWidth} ${dimensions.height + strokeWidth}`, style: {
-            position: "absolute",
-            zIndex: 1,
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-        } },
-        React.createElement("path", { strokeWidth: strokeWidth, stroke: strokeColor, fill: "none", strokeDasharray: strokeLength, strokeDashoffset: currentStrokeOffset, style: {
-                transition: loading ? undefined : "stroke-dashoffset 0.5s ease",
-            }, d: createSvgStrokeForBox(dimensions.width, dimensions.height, dimensions.borderRadius) })));
+    // CSS Keyframes for continuous motion animation
+    const animationStyle = `
+    @keyframes continuous-motion {
+      0% {
+        stroke-dasharray: ${strokeLength * 0.1} ${strokeLength * 0.9};
+        stroke-dashoffset: 0;
+      }
+      50% {
+        stroke-dasharray: ${strokeLength * 0.5} ${strokeLength * 0.5};
+        stroke-dashoffset: -${strokeLength * 0.25};
+      }
+      100% {
+        stroke-dasharray: ${strokeLength * 0.1} ${strokeLength * 0.9};
+        stroke-dashoffset: -${strokeLength};
+      }
+    }
+  `;
+    return (React.createElement(React.Fragment, null,
+        React.createElement("style", null, animationStyle),
+        React.createElement("svg", { ref: svgRef, width: dimensions.width + strokeWidth, height: dimensions.height + strokeWidth, viewBox: `-${strokeWidth / 2} -${strokeWidth / 2} ${dimensions.width + strokeWidth} ${dimensions.height + strokeWidth}`, style: {
+                position: "absolute",
+                zIndex: 1,
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+            } },
+            React.createElement("path", { strokeWidth: strokeWidth, stroke: strokeColor, fill: "none", style: {
+                    animation: loading
+                        ? "continuous-motion 1.5s linear infinite"
+                        : undefined,
+                }, d: createSvgStrokeForBox(dimensions.width, dimensions.height, dimensions.borderRadius) }))));
 };
 export default BorderProgressBar;
