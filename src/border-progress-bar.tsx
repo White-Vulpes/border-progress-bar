@@ -3,9 +3,10 @@ import React, { useEffect, useRef, useState } from "react";
 const BorderProgressBar = (props: {
   strokeWidth: number;
   strokeColor: string;
+  progress: number; // Progress value (0 to 1)
   loading?: boolean; // Add loading prop
 }) => {
-  const { strokeWidth, strokeColor, loading = false } = props;
+  const { strokeWidth, strokeColor, progress, loading = false } = props;
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({
     width: 0,
@@ -90,6 +91,15 @@ const BorderProgressBar = (props: {
     }
   `;
 
+  // Calculate the dash offset for the progress bar when loading is false
+  const strokeDasharray = loading
+    ? undefined // Animated stroke-dasharray for loading
+    : `${progress * strokeLength} ${strokeLength - progress * strokeLength}`;
+
+  const strokeDashoffset = loading
+    ? undefined // Animated stroke-dashoffset for loading
+    : 0; // Static stroke-dashoffset for progress
+
   return (
     <>
       <style>{animationStyle}</style>
@@ -113,9 +123,12 @@ const BorderProgressBar = (props: {
           stroke={strokeColor}
           fill="none"
           style={{
+            strokeDasharray: strokeDasharray,
+            strokeDashoffset: strokeDashoffset,
             animation: loading
               ? "continuous-motion 1.5s linear infinite"
-              : undefined,
+              : undefined, // Animation only when loading
+            transition: loading ? undefined : "stroke-dasharray 0.5s ease", // Smooth transition for progress
           }}
           d={createSvgStrokeForBox(
             dimensions.width,

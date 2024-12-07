@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 const BorderProgressBar = (props) => {
-    const { strokeWidth, strokeColor, loading = false } = props;
+    const { strokeWidth, strokeColor, progress, loading = false } = props;
     const svgRef = useRef(null);
     const [dimensions, setDimensions] = useState({
         width: 0,
@@ -63,6 +63,13 @@ const BorderProgressBar = (props) => {
       }
     }
   `;
+    // Calculate the dash offset for the progress bar when loading is false
+    const strokeDasharray = loading
+        ? undefined // Animated stroke-dasharray for loading
+        : `${progress * strokeLength} ${strokeLength - progress * strokeLength}`;
+    const strokeDashoffset = loading
+        ? undefined // Animated stroke-dashoffset for loading
+        : 0; // Static stroke-dashoffset for progress
     return (React.createElement(React.Fragment, null,
         React.createElement("style", null, animationStyle),
         React.createElement("svg", { ref: svgRef, width: dimensions.width + strokeWidth, height: dimensions.height + strokeWidth, viewBox: `-${strokeWidth / 2} -${strokeWidth / 2} ${dimensions.width + strokeWidth} ${dimensions.height + strokeWidth}`, style: {
@@ -73,9 +80,12 @@ const BorderProgressBar = (props) => {
                 transform: "translate(-50%, -50%)",
             } },
             React.createElement("path", { strokeWidth: strokeWidth, stroke: strokeColor, fill: "none", style: {
+                    strokeDasharray: strokeDasharray,
+                    strokeDashoffset: strokeDashoffset,
                     animation: loading
                         ? "continuous-motion 1.5s linear infinite"
-                        : undefined,
+                        : undefined, // Animation only when loading
+                    transition: loading ? undefined : "stroke-dasharray 0.5s ease", // Smooth transition for progress
                 }, d: createSvgStrokeForBox(dimensions.width, dimensions.height, dimensions.borderRadius) }))));
 };
 export default BorderProgressBar;
