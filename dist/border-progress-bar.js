@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 const BorderProgressBar = (props) => {
-    const { strokeWidth, strokeColor, progress } = props;
+    const { strokeWidth, strokeColor, progress, loading = false } = props;
     const svgRef = useRef(null);
     const [dimensions, setDimensions] = useState({
         width: 0,
@@ -25,9 +25,22 @@ const BorderProgressBar = (props) => {
         updateDimensions();
     }, [strokeWidth]);
     useEffect(() => {
-        const timeoutId = setTimeout(() => setCurrentProgress(progress), 0);
-        return () => clearTimeout(timeoutId);
-    }, [progress]);
+        if (!loading) {
+            const timeoutId = setTimeout(() => setCurrentProgress(progress), 0);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [progress, loading]);
+    useEffect(() => {
+        let animationFrameId;
+        if (loading) {
+            const animate = () => {
+                setCurrentProgress((prev) => (prev + 0.01) % 1); // Increment progress in a loop
+                animationFrameId = requestAnimationFrame(animate);
+            };
+            animate();
+        }
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [loading]);
     function createSvgStrokeForBox(width, height, borderRadius) {
         const r = Math.min(borderRadius, width / 2, height / 2);
         const midX = width / 2;
@@ -60,7 +73,7 @@ const BorderProgressBar = (props) => {
             transform: "translate(-50%, -50%)",
         } },
         React.createElement("path", { strokeWidth: strokeWidth, stroke: strokeColor, fill: "none", strokeDasharray: strokeLength, strokeDashoffset: strokeDashoffset, style: {
-                transition: "stroke-dashoffset 0.5s ease",
+                transition: loading ? undefined : "stroke-dashoffset 0.5s ease",
             }, d: createSvgStrokeForBox(dimensions.width, dimensions.height, dimensions.borderRadius) })));
 };
 export default BorderProgressBar;
