@@ -14,6 +14,7 @@ const BorderProgressBar = (props: {
     borderRadius: 0,
   });
   const [currentProgress, setCurrentProgress] = useState(progress);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -44,12 +45,24 @@ const BorderProgressBar = (props: {
 
   useEffect(() => {
     let animationFrameId: number;
+
     if (loading) {
-      const animate = () => {
-        setCurrentProgress((prev) => (prev + 0.01) % 1); // Increment progress in a loop
+      const startTime = performance.now();
+
+      const animate = (timestamp: number) => {
+        const elapsed = timestamp - startTime;
+        const speed = 0.002; // Base speed
+        const oscillation = Math.sin(elapsed * speed) * 0.5 + 0.5; // Oscillate between 0 and 1
+        const easeInOut =
+          oscillation < 0.5
+            ? 4 * oscillation ** 3
+            : 1 - Math.pow(-2 * oscillation + 2, 3) / 2; // Ease-in-out effect
+
+        setLoadingProgress(easeInOut);
         animationFrameId = requestAnimationFrame(animate);
       };
-      animate();
+
+      animationFrameId = requestAnimationFrame(animate);
     }
     return () => cancelAnimationFrame(animationFrameId);
   }, [loading]);
@@ -92,7 +105,9 @@ const BorderProgressBar = (props: {
     dimensions.height,
     dimensions.borderRadius
   );
-  const strokeDashoffset = strokeLength * (1 - currentProgress);
+
+  const currentStrokeOffset =
+    strokeLength * (1 - (loading ? loadingProgress : currentProgress));
 
   return (
     <svg
@@ -115,7 +130,7 @@ const BorderProgressBar = (props: {
         stroke={strokeColor}
         fill="none"
         strokeDasharray={strokeLength}
-        strokeDashoffset={strokeDashoffset}
+        strokeDashoffset={currentStrokeOffset}
         style={{
           transition: loading ? undefined : "stroke-dashoffset 0.5s ease",
         }}
